@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "CanBus",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.tpp": "cpp"
+		}
+	}
+}

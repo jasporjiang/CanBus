@@ -1,0 +1,4 @@
+this is the first working version of can-bus communication with multiple teensy micromod (manifold). Here we dont have any class definition of node, leader or follower. We only have separate scripts because class definition is redundant and not working properly for some mysterious reason.
+
+The leader will send fixed message with msg.id = 0x200, and will accept message with msg.id = 0x300 (follower1) and 0x400 (follower2). Follower1, receiving and sending signal at the same time, filter message from leader (0x200) and send its own message (0x300). same for follower2.
+However, the synchronizing problem is to be solved. Here we disabled the mailbox interrupts, thus the response will be slow and sometimes not working anymore. Further version of interrupt-based (event-driven) control will be implemented to upgrade it into fast-response multi-agent communication.

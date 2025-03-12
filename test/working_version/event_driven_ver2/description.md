@@ -1,0 +1,1 @@
+This is the full-functional version of event driven canbus communication. Up to 4 manifolds are connected together (1 leader 3 follower). Leader and followers can talk to each other simultaneously with frequency up to 1 kHz, which is limited by the Serial output frequency. If without Serial the communication frequency could be even higher.
