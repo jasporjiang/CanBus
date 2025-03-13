@@ -8,7 +8,15 @@ In general, there are 2 ways for CAN_BUS communication. One is pooling, which is
 
 For message ID filtering, the theory behind this is the separation of ID range for each type of messages, which avoids the need to inspect the payload (adding another message type field in the data payload). 
 we have defined such protocol as follows:
-1. For Leader class, it will send 2 kinds of setpoints to the followers: pressure(0x200 range) and position(0x210 range.)
-2. For follower class, it could send feedback message with same two types: pressure(0x300 range) and position(0x310 range.)
+1. For Leader class, it will send 2 kinds of setpoints to the followers: pressure(0x100) and position(0x200)
+2. For follower class, the ith follower should send feedback message with same two types: pressure (0x100 + i range) and position (0x200 + i range.)
 
 With the protocol above, we could easily filter the message via its range: Msg.id = 0x200U + target_ID;
+
+| Message Type    | Leader CAN ID | Follower 1 CAN ID | Follower 2 CAN ID | Follower 3 CAN ID |
+|-----------------|---------------|-------------------|-------------------|-------------------|
+| Pressure        | `0x100`     | `0x101`         | `0x102`         | `0x103`         |
+| Potentiometer   | `0x200`     | `0x201`         | `0x202`         | `0x203`         |
+| Reserved | `0x300` | .... | ... | ... |
+
+Through this method you can easily extend the protocol with more message type, which is totally possible due to the manifold's extensibility.
