@@ -113,7 +113,6 @@ void loop() {
   } else {
     Serial.print("Leader: Error sending broadcast. Code: ");
     Serial.println(ret);
-    // code -1:  transmit entry failed, no mailboxes available, queued
   }
   
   // Use received feedback to update broadcast values.
