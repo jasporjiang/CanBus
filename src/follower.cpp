@@ -3,9 +3,12 @@
 
 // Set follower identity: 1 for follower1, 2 for follower2
 #define FOL_ID 1   // Change to 2 for follower2
-
-#define P_BASE       0x100
+#define P_BASE  0x100
 #define D_BASE  0x200
+#define BAUD_SERIAL                 115200    
+#define BAUD_CANBUS                 250000
+#define ANALOG_READ_RESOLUTION      12
+#define ANALOG_WRITE_RESOLUTION     12
 
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can;
 CAN_message_t outgoingMsg;
@@ -13,31 +16,48 @@ CAN_message_t outgoingMsg;
 // Callback for processing broadcast messages (ID 0x100)
 void followerCallback(const CAN_message_t &incomingMsg) {
   // debouncing: avoid too fast communication by adding a 10ms interval
-  static unsigned long lastCallTime = 0;
-  unsigned long now = millis();
-  // Ignore duplicate events if they occur within 10ms
-  if (now - lastCallTime < 10) return;
-  lastCallTime = now;
+  // static unsigned long lastCallTime = 0;
+  // unsigned long now = millis();
+  // // Ignore duplicate events if they occur within 10ms
+  // if (now - lastCallTime < 10) return;
+  // lastCallTime = now;
 
-  uint8_t receivedValue = incomingMsg.buf[0];
   Serial.print("Follower ");
   Serial.print(FOL_ID);
   Serial.print(": Received message with ID 0x");
   Serial.print(incomingMsg.id, HEX);
-  Serial.print(", data: ");
-  Serial.println(receivedValue, DEC);
-  
+  Serial.print(", data: [");
+  float stored_data[3] = {0,0,0};
+  if (incomingMsg.len == 6) {
+    uint16_t scaledSetpoints[3];
+
+    // Unpack the scaled setpoints from the message buffer
+    memcpy(&scaledSetpoints[0], &incomingMsg.buf[0], sizeof(uint16_t));
+    memcpy(&scaledSetpoints[1], &incomingMsg.buf[2], sizeof(uint16_t));
+    memcpy(&scaledSetpoints[2], &incomingMsg.buf[4], sizeof(uint16_t));
+
+    // Convert scaled setpoints back to float and update PID controllers
+    for (int i = 0; i < 3; ++i) {
+        float setpoint = static_cast<float>(scaledSetpoints[i]) / 100.0f;
+        // setPressureSetpoint(i, setpoint);
+        stored_data[i] = setpoint;
+        
+        Serial.println(stored_data[i]);
+        Serial.print(" ");
+      }
+      Serial.println("]");
+    }
+  else {
+    Serial.println("Invalid setpoint message length.");
+  }
+
   uint32_t responseID = 0;
   uint8_t responseValue = 0;
-  if (incomingMsg.id == 0x100) { // Broadcast from leader
-    // Extract the two broadcast values
-    responseID = P_BASE + FOL_ID;
-    responseValue = receivedValue - 1;
-  }
-  else if (incomingMsg.id == 0x200)  {
-    responseID = D_BASE + FOL_ID;
-    responseValue = receivedValue + 1;
-  }
+  // if (incomingMsg.id == 0x200) // potentiometer from leader 
+  // {
+  responseID = D_BASE + FOL_ID;
+  responseValue = 50;
+  // }
   
   outgoingMsg.id = responseID;
   outgoingMsg.len = 1;
@@ -50,7 +70,7 @@ void followerCallback(const CAN_message_t &incomingMsg) {
     Serial.print("Follower ");
     Serial.print(FOL_ID);
     Serial.print(": Response with ");
-    Serial.print( (incomingMsg.id == 0x100)? "pressure " : "position " ); 
+    Serial.print(  "pressure "); 
     Serial.print(responseValue);
     Serial.print(", ID 0x");
     Serial.println(outgoingMsg.id, HEX);
@@ -64,15 +84,15 @@ void followerCallback(const CAN_message_t &incomingMsg) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(BAUD_SERIAL);
 
   Can.begin();
-  Can.setBaudRate(250000);
+  Can.setBaudRate(BAUD_CANBUS);
   Can.setMaxMB(2);  // We'll use MB0 for RX and MB1 for TX
 
   // Configure MB0 for receiving the broadcast message (ID 0x100)
   Can.setMB(MB0, RX, STD);
-  Can.setMBFilter(MB0, 0x100, 0x200);
+  // Can.setMBFilter(MB0, 0x100, 0x200);
   
   // Configure MB1 for transmitting feedback messages
   Can.setMB(MB1, TX, STD);
@@ -86,10 +106,10 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("--------- follower ");
-  Serial.print(FOL_ID);
-  Serial.println(" -------------");
+  // Serial.print("--------- follower ");
+  // Serial.print(FOL_ID);
+  // Serial.println(" -------------");
   // In event-driven mode, the callback processes the incoming broadcast.
   // The main loop can be minimal.
-  delay(100);
+  delay(10);
 }

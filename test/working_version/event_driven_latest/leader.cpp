@@ -3,6 +3,10 @@
 // fixed ID protocol, see readme for more details
 #define P_LEADER 0x100 //pressure
 #define D_LEADER 0x200 //displacement
+#define JOYSTICK_DOFS 3 //joystick dof
+// create a pin array
+int joystickPins[JOYSTICK_DOFS] = {A7, A9, A10}; // changed the pins A0->A7, A1->A9, A2->A10
+double measuredLegAngles[JOYSTICK_DOFS] = {0, 0, 0}; // [rad]
 
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can;
 CAN_message_t outgoingMsg;
