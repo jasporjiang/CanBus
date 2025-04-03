@@ -1,4 +1,4 @@
-#include "origamiJoystick.h"
+#include "Joystick/origamiJoystick.h"
 
 double readJoystickLegAngle(int pin){
   double inputVoltage = 3.3; //5; // [v]

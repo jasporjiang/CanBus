@@ -7,7 +7,12 @@
 	],
 	"settings": {
 		"files.associations": {
-			"*.tpp": "cpp"
+			"*.tpp": "cpp",
+			"array": "cpp",
+			"string": "cpp",
+			"string_view": "cpp",
+			"ranges": "cpp",
+			"span": "cpp"
 		}
 	}
 }
