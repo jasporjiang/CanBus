@@ -39,8 +39,8 @@ int CANCommunication::sendMessage(uint32_t id, const double* data, uint8_t numVa
     for (uint8_t i = 0; i < numValues; ++i) {
         uint16_t scaledValue = static_cast<uint16_t>(data[i] * 100); // Scale float to preserve three decimal places
         memcpy(&outgoingMsg.buf[i * 2], &scaledValue, sizeof(uint16_t));
-    Serial.print((double)scaledValue/100);
-    Serial.print(" ");
+        Serial.print((double)scaledValue/100);
+        Serial.print(" ");
     }
     Serial.println("]");
     return canBus.write(MB1, outgoingMsg);

@@ -18,8 +18,8 @@ const int analogPin2 = A3;
 double mapJoystickToPressure(double joystickVal) {
   const double minJoy = 0.4;
   const double maxJoy = 0.9;
-  const double minPressure = 20.0;
-  const double maxPressure = 45.0;
+  const double minPressure = 10.0;
+  const double maxPressure = 30.0;
 
   // Clamp value for safety
   if (joystickVal < minJoy) joystickVal = minJoy;
@@ -41,16 +41,16 @@ void followerCallback(const CAN_message_t &incomingMsg) {
   uint8_t numValues;
   if (canComm.readMessage(incomingMsg, values, numValues)) {
     // manifold actuating
-    // for (int i = 0; i < 3; ++i) {
-    //   double targetPressure = mapJoystickToPressure(values[i]);
-    //   manifold.setPressureSetpoint(i, targetPressure);
-      // Serial.print("Leg ");
-      // Serial.print(i);
-      // Serial.print(" joystick: ");
-      // Serial.print(values[i]);
-      // Serial.print(" → pressure setpoint: ");
-      // Serial.println(targetPressure);
-  // }     
+    for (int i = 0; i < 3; ++i) {
+      double targetPressure = mapJoystickToPressure(values[i]);
+      manifold.setPressureSetpoint(i, targetPressure);
+      Serial.print("Leg ");
+      Serial.print(i);
+      Serial.print(" joystick: ");
+      Serial.print(values[i]);
+      Serial.print(" → pressure setpoint: ");
+      Serial.println(targetPressure);
+  }     
   } else {
       Serial.println("CANcomm: Failed to decode message.");
   }
@@ -86,16 +86,16 @@ void followerCallback(const CAN_message_t &incomingMsg) {
 void setup() {
   Serial.begin(BAUD_SERIAL);
   analogReadResolution(ANALOG_READ_RESOLUTION); //12 bits [0-4095]
-  analogWriteResolution(12); // TODO: fix PID resolution issue. now can only use res=8.
+  analogWriteResolution(ANALOG_WRITE_RESOLUTION); // TODO: fix PID resolution issue. now can only use res=8.
   canBus.begin();
   canComm.setup();
   canComm.onReceive(followerCallback);
 
   manifold.setup();
-  double Kp = 25*16;
-  double Ki = 0;
+  double Kp = 150;
+  double Ki = 5;
   double Kd = 0.0;
-  double Alpha = 0.0;
+  double Alpha = 0.3;
   for(int i = 0; i < 3; i++) {
   manifold.setPIDTunings(i, Kp, Ki, Kd, Alpha);
   }
