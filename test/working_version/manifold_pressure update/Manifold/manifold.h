@@ -1,10 +1,10 @@
 // Manifold.h
-// Author:  Shaopeng Jiang <shaopeng.jiang@epfl.ch>
+
 #ifndef MANIFOLD_H
 #define MANIFOLD_H
 
 #include <vector>
-#include "Channel_PID.h"
+#include "Channel.h"
 
 class Manifold {
 public:

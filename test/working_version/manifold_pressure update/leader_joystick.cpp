@@ -10,20 +10,12 @@ CANCommunication canComm(canBus, ID_LEADER);
 
 int joystickPins[JOYSTICK_DOFS] = {A7, A9, A10}; // changed the pins A0->A7, A1->A9, A2->A10
 double measuredLegAngles[JOYSTICK_DOFS] = {0, 0, 0}; // [rad]
-unsigned long sendTime = 0; //to measure the time delay
-
+  
 // Callback for receiving feedback messages from follower. currently assume that only receive pressure information.
 void leaderCallback(const CAN_message_t &incomingMsg) {
 // Identify which follower sent feedback by CAN ID.
 // uint8_t agentID;
 // decodeID(incomingMsg.id, agentID, msgType);
-
-//measuring latency
-unsigned long receiveTime = micros();  // <-- Get response timestamp
-unsigned long latency = receiveTime - sendTime;
-Serial.print("Leader: Communication latency = ");
-Serial.print(latency);
-Serial.println(" ms");
 
 Serial.print("Leader: Received feedback from Follower ");
 Serial.println(incomingMsg.id - 0x100);
@@ -79,8 +71,6 @@ void loop() {
     {
       measuredLegAngles[i] = readJoystickLegAngle(joystickPins[i]); // [rad]
     }
-
-    sendTime = micros(); 
     int ret = canComm.sendMessage(D_LEADER, measuredLegAngles, 3);
     if(ret == 1) {
       Serial.println("Leader: Broadcast sent successfully.");

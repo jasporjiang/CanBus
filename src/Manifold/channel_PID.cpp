@@ -1,6 +1,10 @@
-#include "channel.h"
-#include "PID.h"
+// single channel control with a manifold
+// Author:  Shaopeng Jiang <shaopeng.jiang@epfl.ch>
+
+#include "channel_PID.h"
 #include <Arduino.h>
+#include "parameters_mnf.h"
+
 Channel::Channel(int inletPin, int outletPin, int sensorPin)
   : inletPin(inletPin), outletPin(outletPin), sensorPin(sensorPin),
     pressure(0), filteredPressure(0), filterAlpha(0.0),setpoint(0), output(0),
@@ -8,9 +12,9 @@ Channel::Channel(int inletPin, int outletPin, int sensorPin)
     pidController(&pressure, &output, &setpoint, Kp, Ki, Kd, SampleTime, ControllerDirection)
 {
   // Initialize PID controller parameters
-  pidController.SetSampleTime(10);  // Set sample time in milliseconds
-  pidController.SetOutputLimits(-255, 255);  // Adjust as needed
-  pidController.IntegratorAntiWindUpLimits(-255, 255);  // Adjust as needed
+  pidController.SetSampleTime(PRESSURE_CONTROL_PERIOD);  // Set sample time in milliseconds
+  pidController.SetOutputLimits(-OUTPUT_LIMIT, OUTPUT_LIMIT);  // Adjust as needed
+  pidController.IntegratorAntiWindUpLimits(-ANTI_WINDUP_LIMIT, ANTI_WINDUP_LIMIT);  // Adjust as needed
   // pidController.filterBeta = 0.1;  // Adjust filter coefficient as needed
 
   // TODO: test Read initial pressure 
@@ -28,8 +32,8 @@ void Channel::setup() {
   pinMode(sensorPin, INPUT);
 
   // Set PWM frequency if needed (depending on your board)
-  analogWriteFrequency(inletPin, 20000);
-  analogWriteFrequency(outletPin, 20000);
+  analogWriteFrequency(inletPin, PWM_FREQUENCY);
+  analogWriteFrequency(outletPin, PWM_FREQUENCY);
 }
 
 void Channel::update() {
@@ -83,37 +87,32 @@ void Channel::readPressure() {
 }
 
 void Channel::controlValves() {
-  int inletDutyCycle = 0;
-  int outletDutyCycle = 0;
+  int inletDutyCycle = MIN_PWM;
+  int outletDutyCycle = MIN_PWM;
 
   // Normalize the PID output to [0, 1]
   // double maxDutyCycle = 255.0;
   // double normalizedOutput = output / maxDutyCycle; //check PID controller output range
 
-  double openness = output;
+  // double openness = output;
 
   // Determine whether to pressurize or depressurize based on PID output
   if (output > 0) {
     // Need to increase pressure - open inlet valve
-    inletDutyCycle = (int)openness;
-    outletDutyCycle = 0;
+    inletDutyCycle = constrain((int)(output) + MIN_PWM, MIN_PWM, MAX_PWM);
+    outletDutyCycle = MIN_PWM;
   } else {
     // Need to decrease pressure - open outlet valve
-    inletDutyCycle = 0;
-    outletDutyCycle = (int)(-openness);
+    inletDutyCycle = MIN_PWM;
+    outletDutyCycle = constrain((int)(-output) + MIN_PWM, MIN_PWM, MAX_PWM);
   }
-
-  // Ensure duty cycles are within 0-255 and limit them dynamically
-  inletDutyCycle = constrain(inletDutyCycle, 0, 255);
-  outletDutyCycle = constrain(outletDutyCycle, 0, 255);
-
   setValveStatus(inletDutyCycle, outletDutyCycle);
 }
 
 void Channel::setValveStatus(double inletDutyCycle, double outletDutyCycle) {
   // This function is responsible for actually setting the valve openness (PWM)
-  this->inletRate = inletDutyCycle / 255.0;
-  this->outletRate = outletDutyCycle / 255.0;
+  this->inletRate = inletDutyCycle / (MAX_PWM - MIN_PWM);
+  this->outletRate = outletDutyCycle / (MAX_PWM - MIN_PWM);
 
   // Write to the valves
   analogWrite(inletPin, inletDutyCycle);
@@ -126,7 +125,7 @@ void Channel::setValveStatus(double inletDutyCycle, double outletDutyCycle) {
 
 
 double Channel::convertADCtoPressure(int adcValue) {
-  double percent = adcValue / 4095.0 * 8.4 / 5.1;
+  double percent = adcValue / double(PRESSURE_READ_RANGE) * 8.4 / 5.1;
   double pressure = (percent - 0.1) * (103.42*2)/0.8 -  103.42 + 3.17; 
   return pressure;
 }
