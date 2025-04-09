@@ -21,13 +21,12 @@ void leaderCallback(const CAN_message_t &incomingMsg) {
 //measuring latency
 unsigned long receiveTime = micros();  // <-- Get response timestamp
 unsigned long latency = receiveTime - sendTime;
-Serial.print("Leader: Communication latency = ");
-Serial.print(latency);
-Serial.println(" ms");
+Serial.print("> Leader: Communication latency: ");
+Serial.println(latency); //microsecond
 
-Serial.print("Leader: Received feedback from Follower ");
-Serial.println(incomingMsg.id - 0x100);
-Serial.print("Leader: read sample pressure data: [");
+// Serial.print("Leader: Received feedback from Follower ");
+// Serial.println(incomingMsg.id - 0x100);
+// Serial.print("Leader: read sample pressure data: [");
 ///////////// read pressure data //////////////
 double pressure[3];
 if (incomingMsg.len == 6) {
@@ -43,11 +42,13 @@ if (incomingMsg.len == 6) {
       double data = static_cast<float>(scaledData[i]) / 100.0f;
       // setPressureSetpoint(i, setpoint);
       pressure[i] = data;
-      
-      Serial.print(pressure[i]);
-      Serial.print(" ");
+      Serial.print("> leader pressure in ");
+      Serial.print(i);
+      Serial.print(": ");
+      Serial.println(pressure[i]);
+      // Serial.print(" ");
     }
-    Serial.println("]");
+    // Serial.println("]");
   }
   else {
     Serial.println("Invalid setpoint message length.");

@@ -34,15 +34,21 @@ int CANCommunication::sendMessage(uint32_t id, const double* data, uint8_t numVa
     outgoingMsg.id = id;
     outgoingMsg.len = numValues * sizeof(uint16_t); // Each uint16_t is 2 bytes
     
-    Serial.print("CANcomm: Broadcasting data: [ ");
+    // Serial.println("CANcomm: Broadcasting data: [ ");
 
     for (uint8_t i = 0; i < numValues; ++i) {
         uint16_t scaledValue = static_cast<uint16_t>(data[i] * 100); // Scale float to preserve three decimal places
         memcpy(&outgoingMsg.buf[i * 2], &scaledValue, sizeof(uint16_t));
-        Serial.print((double)scaledValue/100);
-        Serial.print(" ");
+
+        // for teleplot curve drawing. comment out if dont need them
+        Serial.print("> CAN out ");
+        Serial.print(i);
+        Serial.print(":");
+
+        Serial.println((double)scaledValue/100);
+        // Serial.print(" ");
     }
-    Serial.println("]");
+    // Serial.println("]");
     return canBus.write(MB1, outgoingMsg);
 }
 

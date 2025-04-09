@@ -16,17 +16,17 @@ const int analogPin2 = A3;
 
 // Map joystick reading [0.4, 0.9] to pressure [20, 45] kPa
 double mapJoystickToPressure(double joystickVal) {
-  const double minJoy = 0.4;
+  const double minJoy = 0.1;
   const double maxJoy = 0.9;
-  const double minPressure = 10.0;
-  const double maxPressure = 30.0;
+  const double minPressure = 0.0;
+  const double maxPressure = 40.0;
 
   // Clamp value for safety
   if (joystickVal < minJoy) joystickVal = minJoy;
   if (joystickVal > maxJoy) joystickVal = maxJoy;
 
   // Linear mapping
-  return minPressure + (joystickVal - minJoy) * (maxPressure - minPressure) / (maxJoy - minJoy);
+  return minPressure - 5 + (joystickVal - minJoy) * (maxPressure - minPressure) / (maxJoy - minJoy);
 }
 
 // Callback for processing broadcast messages (ID 0x100)
@@ -44,11 +44,11 @@ void followerCallback(const CAN_message_t &incomingMsg) {
     for (int i = 0; i < 3; ++i) {
       double targetPressure = mapJoystickToPressure(values[i]);
       manifold.setPressureSetpoint(i, targetPressure);
-      Serial.print("Leg ");
+      Serial.print("> Leg ");
       Serial.print(i);
-      Serial.print(" joystick: ");
-      Serial.print(values[i]);
-      Serial.print(" → pressure setpoint: ");
+      // Serial.print(" joystick: ");
+      // Serial.print(values[i]);
+      Serial.print(" pressure setpoint: ");
       Serial.println(targetPressure);
   }     
   } else {
@@ -63,22 +63,25 @@ void followerCallback(const CAN_message_t &incomingMsg) {
   uint32_t responseID = D_BASE + ID_FOLLOWER; // module ID + message type ID
   int ret = canComm.sendMessage(responseID, pressure, 3);
   if(ret == 1) {
-    Serial.print("Follower ");
-    Serial.print(ID_FOLLOWER);
-    Serial.print(": Response with ");
-    Serial.print(  "pressure [");
+    // Serial.print("Follower ");
+    // Serial.print(ID_FOLLOWER);
+    // Serial.print(": Response with ");
+    // Serial.println(  "pressure [");
     for (int i = 0; i < 3; i++) {
-      Serial.print(pressure[i]);
-      Serial.print(" "); 
+      Serial.print("> follower out ");
+      Serial.print(i);
+      Serial.print(": ");
+      Serial.println(pressure[i]);
+      // Serial.print(" "); 
     }    
-    Serial.print("]");
-    Serial.print(", ID 0x");
+    // Serial.print("]");
+    // Serial.print(", ID 0x");
     Serial.println(outgoingMsg.id, HEX);
   } 
   else {
-    Serial.print("Follower ");
-    Serial.print(ID_FOLLOWER);
-    Serial.println(": Error sending response.");
+    // Serial.print("Follower ");
+    // Serial.print(ID_FOLLOWER);
+    // Serial.println(": Error sending response.");
   }  
   delay(10);
 }
@@ -92,23 +95,25 @@ void setup() {
   canComm.onReceive(followerCallback);
 
   manifold.setup();
-  double Kp = 150;
-  double Ki = 5;
+  double Kp = 200;
+  double Ki = 20;
   double Kd = 0.0;
-  double Alpha = 0.3;
+  double Alpha = 0.1;
   for(int i = 0; i < 3; i++) {
   manifold.setPIDTunings(i, Kp, Ki, Kd, Alpha);
   }
+
+  manifold.setPIDTunings(1, Kp + 100, Ki, Kd, 0.1);
   manifold.purgeOutlets(3000);
 
-  Serial.print("Follower ");
-  Serial.print(ID_FOLLOWER);
-  Serial.println(": CAN bus initialized (event-driven).");
+  // Serial.print("Follower ");
+  // Serial.print(ID_FOLLOWER);
+  // Serial.println(": CAN bus initialized (event-driven).");
 }
 
 void loop() {
   manifold.update();
   // In event-driven mode, the callback processes the incoming broadcast.
   // The main loop can be minimal.
-  delay(50);
+  delay(1);
 }
